@@ -1,0 +1,153 @@
+---
+title: "TIPS DASHBOARD | RESTAURANT BILLING INSIGHTS"
+format: dashboard
+page-layout: custom
+---
+
+```{python}
+import pandas as pd
+import plotly.express as px
+import itables
+
+# Load dataset
+tips = px.data.tips()
+
+# Core metrics
+total_revenue = round(tips["total_bill"].sum(), 2)
+avg_tip = round(tips["tip"].mean(), 2)
+avg_tip_pct = round((tips["tip"] / tips["total_bill"]).mean() * 100, 1)
+
+largest_bill_row = tips.sort_values("total_bill", ascending=False).iloc[0]
+largest_bill_value = round(largest_bill_row["total_bill"], 2)
+largest_bill_day = largest_bill_row["day"]
+
+# Tip percentage column
+tips["tip_pct"] = tips["tip"] / tips["total_bill"] * 100
+
+# Revenue by day
+rev_day = tips.groupby("day", as_index=False)["total_bill"].sum()
+
+bar_rev_day = px.bar(
+    rev_day,
+    x="day",
+    y="total_bill",
+    color="total_bill",
+    color_continuous_scale="Teal",
+    title="Total Revenue by Day",
+).update_layout(coloraxis_showscale=False)
+
+# Scatter: bill vs tip
+scatter_fig = px.scatter(
+    tips,
+    x="total_bill",
+    y="tip",
+    color="time",
+    size="size",
+    hover_data=["day", "sex", "smoker"],
+    title="Relationship Between Total Bill and Tip",
+)
+
+# Boxplot tip percentage by day
+box_fig = px.box(
+    tips,
+    x="day",
+    y="tip_pct",
+    color="day",
+    points="all",
+    title="Tip Percentage Distribution by Day",
+    color_discrete_sequence=px.colors.qualitative.Bold,
+).update_layout(showlegend=False)
+
+# Pivot summary
+pivot_table = tips.pivot_table(
+    values="tip_pct", index="day", columns="time", aggfunc="mean"
+).round(1)
+```
+
+# HOME
+
+## Row {height=30%}
+
+::: {.valuebox icon="currency-dollar" color="#0F766E" title="Total Revenue"}
+`{python} f"${total_revenue}"`
+:::
+
+::: {.valuebox icon="cash-coin" color="#FACC15" title="Average Tip ($)"}
+`{python} f"${avg_tip}"`
+:::
+
+::: {.valuebox icon="percent" color="#1E3A8A" title="Average Tip (%)"}
+`{python} f"{avg_tip_pct}%"`
+:::
+
+::: {.valuebox icon="graph-up-arrow" color="#9333EA" title="Largest Bill"}
+`{python} f"${largest_bill_value}"`
+`{python} largest_bill_day`
+:::
+
+## Row {height=70%}
+
+### Column {width="60%"}
+```{python}
+scatter_fig
+```
+
+### Column {width="40%"}
+```{python}
+bar_rev_day
+```
+
+# TIPPING PATTERNS
+
+## Row {height=60%}
+
+### Column {width="70%"}
+```{python}
+box_fig
+```
+
+### Column {width="30%"}
+
+### Observations
+
+- Weekend days show higher bill variability.
+- Dinner generates larger bills than lunch.
+- Tip percentage distribution is relatively stable with some high outliers.
+- Larger party sizes produce larger total tips but similar percentages.
+
+## Row {height=40%}
+
+### Column {width="50%"}
+```{python}
+px.histogram(
+    tips,
+    x="tip_pct",
+    nbins=20,
+    color_discrete_sequence=["#0F766E"],
+    title="Distribution of Tip Percentages"
+)
+```
+
+### Column {width="50%"}
+```{python}
+px.pie(
+    tips,
+    names="time",
+    title="Lunch vs Dinner Share",
+    color_discrete_sequence=px.colors.qualitative.Set2
+)
+```
+
+# DATA DOWNLOAD
+
+```{python}
+itables.show(
+    tips,
+    caption="Full Tips Dataset",
+    buttons=["csvHtml5"]
+)
+```
+
+# ABOUT
+
+This dashboard uses the built-in `tips` dataset from Plotly Express.

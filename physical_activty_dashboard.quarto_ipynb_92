@@ -1,0 +1,263 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "---\n",
+        "title: \"Physical activity dashboard\"\n",
+        "author: \"Azubuike Bright\"\n",
+        "format: dashboard\n",
+        "theme: Pulse\n",
+        "---\n"
+      ],
+      "id": "a7cd8145"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# import packages\n",
+        "import pandas as pd\n",
+        "import numpy as np\n",
+        "import plotly.express as px\n",
+        "import plotly.graph_objects as go\n",
+        "import matplotlib.pyplot as plt\n",
+        "import seaborn as sns"
+      ],
+      "id": "b8f54c64",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# loading data\n",
+        "physical_activity = pd.read_csv(\"physical_activity.csv\")"
+      ],
+      "id": "dadc1214",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# data cleaning\n",
+        "physical_activity=physical_activity.rename(columns={\"oms_recommendation\":\"who_recommendation\"})\n",
+        "physical_activity[\"bmi\"] = pd.to_numeric(physical_activity[\"bmi\"], errors=\"coerce\")\n",
+        "physical_activity[\"sedentary_ap_s_day\"] = pd.to_numeric(physical_activity[\"sedentary_ap_s_day\"], errors=\"coerce\")\n",
+        "physical_activity[\"light_ap_s_day\"] = pd.to_numeric(physical_activity[\"light_ap_s_day\"], errors=\"coerce\")\n",
+        "physical_activity[\"mvpa_s_day\"] = pd.to_numeric(physical_activity[\"mvpa_s_day\"], errors=\"coerce\")"
+      ],
+      "id": "de81fa50",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# renaming rows\n",
+        "physical_activity[\"status\"]=physical_activity[\"status\"].replace({\"Adulte\": \"Adult\", \"Enfant\":\"Infant\"})"
+      ],
+      "id": "5bd60c4a",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# time conversion\n",
+        "physical_activity[\"mvpa_min_day\"]=physical_activity[\"mvpa_s_day\"]/60\n",
+        "physical_activity[\"sedentary_min_day\"]= physical_activity[\"sedentary_ap_s_day\"]/60\n",
+        "physical_activity[\"light_min_day\"]= physical_activity[\"light_ap_s_day\"]/60"
+      ],
+      "id": "73458354",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# data summary\n",
+        "physical_activity_avg=physical_activity.groupby([\"sex\", \"status\", \"who_recommendation\"]).agg(\n",
+        "avg_bmi=(\"bmi\", \"mean\"), avg_mvpa_min_day=(\"mvpa_min_day\", \"mean\"), avg_sedentary_min_day=(\"sedentary_min_day\", \"mean\")).reset_index()"
+      ],
+      "id": "84ec12b2",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# droping column\n",
+        "physical_activity=physical_activity.drop(columns={\"sedentary_ap_s_day\", \"light_ap_s_day\", \"mvpa_s_day\"})"
+      ],
+      "id": "cfe66a56",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# % meeting WHO recommendations by sex \n",
+        "who_by_sex = (\n",
+        "     physical_activity\n",
+        "    .groupby([\"sex\", \"who_recommendation\"])\n",
+        "    .size()\n",
+        "     .reset_index(name=\"count\")\n",
+        "     )\n",
+        "\n",
+        "\n",
+        "who_by_sex[\"percentage\"] = (\n",
+        "    who_by_sex.groupby(\"sex\")[\"count\"]\n",
+        "    .transform(lambda x: x / x.sum() * 100)\n",
+        "    )\n",
+        "\n",
+        "#% meeting WHO recommendations by age group\n",
+        "who_by_age= (\n",
+        "    physical_activity\n",
+        "    .groupby([\"status\", \"who_recommendation\"])\n",
+        "    .size()\n",
+        "    .reset_index(name=\"count\")\n",
+        ")\n",
+        "\n",
+        "who_by_age[\"percentage\"] = (\n",
+        "    who_by_age.groupby(\"status\")[\"count\"]\n",
+        "    .transform(lambda x: x / x.sum() * 100)\n",
+        "    )   "
+      ],
+      "id": "b30e8440",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# chats\n",
+        "bar_chart=px.bar(physical_activity_avg, x=\"status\", y=\"avg_mvpa_min_day\", color=\"sex\", title=\"Average MVPA (minutes/day) by age group and sex\")\n",
+        "\n",
+        "scatter_plot=px.scatter(physical_activity, x=\"mvpa_min_day\", y=\"bmi\", color=\"who_recommendation\", title=\"BMI vs MVPA\")\n",
+        "\n",
+        "box_plot=px.box(physical_activity, x=\"sex\", y=\"sedentary_min_day\", title=\"Distribution of Sedentary time across sexes\", color=\"sex\")\n",
+        "\n",
+        "stack_bar=px.bar(who_by_age, x=\"status\", y=\"percentage\", color=\"who_recommendation\", title=\"WHO Recommendation by Age Group\").update_layout(barmode=\"stack\")"
+      ],
+      "id": "9b0e9a62",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "# Dashboard\n",
+        "\n",
+        "## {height=\"15%\"}\n",
+        "### column {width=\"20%\"}\n",
+        ":::{.valuebox icon=\"people-fill\" color=\"#1871d6\" title=\"Total participants\"}\n",
+        "142\n",
+        ":::\n",
+        "### column {width=\"20%\"}\n",
+        ":::{.valuebox icon=\"activity\" color=\"#f59342\" title=\"Average BMI of adults and children\"}\n",
+        "53\n",
+        ":::\n",
+        "### column {width=\"20%\"}\n",
+        ":::{.valuebox icon=\"alarm\" color=\"#ec840d\" title=\"Average sedentary time (hours/day)\"}\n",
+        "11\n",
+        ":::\n",
+        "### column {width=\"20%\"}\n",
+        ":::{.valuebox icon=\"person-walking\" color=\"#08dd96\" title=\"% of meeting WHO recommendation\"}\n",
+        "34\n",
+        ":::\n",
+        "\n",
+        "## {height=\"30%\"}\n",
+        "\n",
+        "### {width=\"65%\"}"
+      ],
+      "id": "56c770c0"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "bar_chart"
+      ],
+      "id": "c924e202",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "### {width=\"35%\"}"
+      ],
+      "id": "91323e13"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "scatter_plot"
+      ],
+      "id": "289f7098",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## {height=\"30%\"}\n",
+        "### {width=\"50%\"}"
+      ],
+      "id": "7da8eeaa"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "box_plot"
+      ],
+      "id": "213dff33",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "### {width=\"50%\"}"
+      ],
+      "id": "b9f615d6"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "stack_bar"
+      ],
+      "id": "d0ae44bb",
+      "execution_count": null,
+      "outputs": []
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "name": "python3",
+      "language": "python",
+      "display_name": "Python 3 (ipykernel)",
+      "path": "C:\\Users\\PH\\AppData\\Local\\Programs\\Python\\Python312\\share\\jupyter\\kernels\\python3"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}

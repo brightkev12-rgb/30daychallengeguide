@@ -1,0 +1,137 @@
+---
+title: "Physical activity dashboard"
+author: "Azubuike Bright"
+format: dashboard
+theme: Pulse
+---
+
+
+```{python}
+# import packages
+import pandas as pd
+import numpy as np
+import plotly.express as px
+import plotly.graph_objects as go
+import matplotlib.pyplot as plt
+import seaborn as sns
+```
+
+
+```{python}
+# loading data
+physical_activity = pd.read_csv("physical_activity.csv")
+```
+
+```{python}
+# data cleaning
+physical_activity=physical_activity.rename(columns={"oms_recommendation":"who_recommendation"})
+physical_activity["bmi"] = pd.to_numeric(physical_activity["bmi"], errors="coerce")
+physical_activity["sedentary_ap_s_day"] = pd.to_numeric(physical_activity["sedentary_ap_s_day"], errors="coerce")
+physical_activity["light_ap_s_day"] = pd.to_numeric(physical_activity["light_ap_s_day"], errors="coerce")
+physical_activity["mvpa_s_day"] = pd.to_numeric(physical_activity["mvpa_s_day"], errors="coerce")
+```
+
+```{python}
+# renaming rows
+physical_activity["status"]=physical_activity["status"].replace({"Adulte": "Adult", "Enfant":"Infant"})
+```
+
+```{python}
+# time conversion
+physical_activity["mvpa_min_day"]=physical_activity["mvpa_s_day"]/60
+physical_activity["sedentary_min_day"]= physical_activity["sedentary_ap_s_day"]/60
+physical_activity["light_min_day"]= physical_activity["light_ap_s_day"]/60
+```
+
+```{python}
+# data summary
+physical_activity_avg=physical_activity.groupby(["sex", "status", "who_recommendation"]).agg(
+avg_bmi=("bmi", "mean"), avg_mvpa_min_day=("mvpa_min_day", "mean"), avg_sedentary_min_day=("sedentary_min_day", "mean")).reset_index()
+```
+
+```{python}
+# droping column
+physical_activity=physical_activity.drop(columns={"sedentary_ap_s_day", "light_ap_s_day", "mvpa_s_day"})
+```
+
+```{python}
+# % meeting WHO recommendations by sex 
+who_by_sex = (
+     physical_activity
+    .groupby(["sex", "who_recommendation"])
+    .size()
+     .reset_index(name="count")
+     )
+
+
+who_by_sex["percentage"] = (
+    who_by_sex.groupby("sex")["count"]
+    .transform(lambda x: x / x.sum() * 100)
+    )
+
+#% meeting WHO recommendations by age group
+who_by_age= (
+    physical_activity
+    .groupby(["status", "who_recommendation"])
+    .size()
+    .reset_index(name="count")
+)
+
+who_by_age["percentage"] = (
+    who_by_age.groupby("status")["count"]
+    .transform(lambda x: x / x.sum() * 100)
+    )   
+```
+
+```{python}
+# chats
+bar_chart=px.bar(physical_activity_avg, x="status", y="avg_mvpa_min_day", color="sex", title="Average MVPA (minutes/day) by age group and sex")
+
+scatter_plot=px.scatter(physical_activity, x="mvpa_min_day", y="bmi", color="who_recommendation", title="BMI vs MVPA")
+
+box_plot=px.box(physical_activity, x="sex", y="sedentary_min_day", title="Distribution of Sedentary time across sexes", color="sex")
+
+stack_bar=px.bar(who_by_age, x="status", y="percentage", color="who_recommendation", title="WHO Recommendation by Age Group").update_layout(barmode="stack")
+```
+
+# Dashboard
+
+## {height="15%"}
+### column {width="20%"}
+:::{.valuebox icon="people-fill" color="#1871d6" title="Total participants"}
+142
+:::
+### column {width="20%"}
+:::{.valuebox icon="activity" color="#f59342" title="Average BMI of adults and children"}
+53
+:::
+### column {width="20%"}
+:::{.valuebox icon="alarm" color="#ec840d" title="Average sedentary time (hours/day)"}
+11
+:::
+### column {width="20%"}
+:::{.valuebox icon="person-walking" color="#08dd96" title="% of meeting WHO recommendation"}
+34
+:::
+
+## {height="30%"}
+
+### {width="65%"}
+```{python}
+bar_chart
+```
+### {width="35%"}
+
+```{python}
+scatter_plot
+```
+## {height="30%"}
+### {width="50%"}
+
+```{python}
+box_plot
+```
+### {width="50%"}
+```{python}
+stack_bar
+```

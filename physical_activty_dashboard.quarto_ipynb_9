@@ -1,0 +1,301 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "---\n",
+        "title: \"Physical activity dashboard\"\n",
+        "author: \"Azubuike Bright\"\n",
+        "format: dashboard\n",
+        "---\n"
+      ],
+      "id": "bf45500e"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "import pandas as pd\n",
+        "import numpy as np\n",
+        "import plotly.express as px\n",
+        "import plotly.graph_objects as go\n",
+        "import matplotlib.pyplot as plt\n",
+        "import seaborn as sns"
+      ],
+      "id": "fbf88755",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "# page 1"
+      ],
+      "id": "08e8ffb0"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "bar_chart"
+      ],
+      "id": "f0e52f4b",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "##\n",
+        "\n",
+        "\n",
+        "\n",
+        "# page 2\n",
+        "\n",
+        "##\n",
+        "\n",
+        "# page 3\n"
+      ],
+      "id": "ea026128"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# importing data\n",
+        "\n",
+        "physical_activity = pd.read_csv(\"physical_activity.csv\")"
+      ],
+      "id": "8c7fa1c6",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# data cleaning\n",
+        "\n",
+        "physical_activity.isnull().sum()\n",
+        "\n",
+        "\n",
+        "\n",
+        "physical_activity= physical_activity.dropna()\n",
+        "\n",
+        "physical_activity\n",
+        "\n",
+        "\n",
+        "\n",
+        "physical_activity.isnull().values.any()\n",
+        "\n",
+        "\n",
+        "\n",
+        "# renaming column\n",
+        "\n",
+        "physical_activity=physical_activity.rename(columns={\"oms_recommendation\":\"who_recommendation\"})\n",
+        "\n",
+        "physical_activity\n",
+        "\n",
+        "\n",
+        "\n",
+        "physical_activity.info\n",
+        "\n",
+        "\n",
+        "\n",
+        "physical_activity[\"bmi\"] = pd.to_numeric(physical_activity[\"bmi\"], errors=\"coerce\")\n",
+        "\n",
+        "physical_activity[\"sedentary_ap_s_day\"] = pd.to_numeric(physical_activity[\"sedentary_ap_s_day\"], errors=\"coerce\")\n",
+        "\n",
+        "physical_activity[\"light_ap_s_day\"] = pd.to_numeric(physical_activity[\"light_ap_s_day\"], errors=\"coerce\")\n",
+        "\n",
+        "physical_activity[\"mvpa_s_day\"] = pd.to_numeric(physical_activity[\"mvpa_s_day\"], errors=\"coerce\")\n",
+        "\n",
+        "physical_activity\n",
+        "\n",
+        "\n",
+        "\n",
+        "# renaming rows\n",
+        "\n",
+        "physical_activity[\"status\"]=physical_activity[\"status\"].replace({\"Adulte\": \"Adult\", \"Enfant\":\"Infant\"})"
+      ],
+      "id": "28405f05",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# data summary\n",
+        "\n",
+        "physical_activity[\"mvpa_min_day\"]=physical_activity[\"mvpa_s_day\"]/60\n",
+        "\n",
+        "physical_activity\n",
+        "\n",
+        "\n",
+        "\n",
+        "physical_activity[\"sedentary_min_day\"]= physical_activity[\"sedentary_ap_s_day\"]/60\n",
+        "\n",
+        "physical_activity\n",
+        "\n",
+        "\n",
+        "\n",
+        "physical_activity[\"light_min_day\"]= physical_activity[\"light_ap_s_day\"]/60"
+      ],
+      "id": "1d031d6f",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "physical_activity=physical_activity.drop(columns={\"sedentary_ap_s_day\", \"light_ap_s_day\", \"mvpa_s_day\"})"
+      ],
+      "id": "e79ef304",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "physical_activity_avg=physical_activity.groupby([\"sex\", \"status\", \"who_recommendation\"]).agg(\n",
+        "\n",
+        "    avg_bmi=(\"bmi\", \"mean\"),\n",
+        "\n",
+        "    avg_mvpa_min_day=(\"mvpa_min_day\", \"mean\"),\n",
+        "\n",
+        "    avg_sedentary_min_day=(\"sedentary_min_day\", \"mean\")\n",
+        "\n",
+        ").reset_index()"
+      ],
+      "id": "ee591038",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# % meeting WHO recommendations by sex \n",
+        "\n",
+        "who_by_sex = (\n",
+        "\n",
+        "    physical_activity\n",
+        "\n",
+        "    .groupby([\"sex\", \"who_recommendation\"])\n",
+        "\n",
+        "    .size()\n",
+        "\n",
+        "    .reset_index(name=\"count\")\n",
+        "\n",
+        ")\n",
+        "\n",
+        "\n",
+        "\n",
+        "\n",
+        "\n",
+        "who_by_sex[\"percentage\"] = (\n",
+        "\n",
+        "    who_by_sex.groupby(\"sex\")[\"count\"]\n",
+        "\n",
+        "    .transform(lambda x: x / x.sum() * 100)\n",
+        "\n",
+        ")\n"
+      ],
+      "id": "4c180457",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "#% meeting WHO recommendations by age group\n",
+        "\n",
+        "who_by_age= (\n",
+        "\n",
+        "    physical_activity\n",
+        "\n",
+        "    .groupby([\"status\", \"who_recommendation\"])\n",
+        "\n",
+        "    .size()\n",
+        "\n",
+        "    .reset_index(name=\"count\")\n",
+        "\n",
+        ")\n",
+        "\n",
+        "who_by_age[\"percentage\"] = (\n",
+        "\n",
+        "    who_by_age.groupby(\"status\")[\"count\"]\n",
+        "\n",
+        "    .transform(lambda x: x / x.sum() * 100)\n",
+        "\n",
+        ")"
+      ],
+      "id": "a2f0448f",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Average MVPA (minutes/day) by age group and sex\n",
+        "\n",
+        "bar_chart=px.bar(physical_activity_avg, x=\"status\", y=\"avg_mvpa_min_day\", color=\"sex\", title=\"Average MVPA (minutes/day) by age group and sex\")"
+      ],
+      "id": "0c58761e",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "stack_bar=px.bar(who_by_age, x=\"status\", y=\"percentage\", color=\"who_recommendation\", title=\"WHO Recommendations by Age Group\")\n",
+        "\n",
+        "\n",
+        "\n",
+        "stack_bar.update_layout(barmode=\"stack\")"
+      ],
+      "id": "43cab1cc",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "scatter_plot=px.scatter(physical_activity, x=\"mvpa_min_day\", y=\"bmi\", color=\"who_recommendation\", title=\"BMI vs MVPA\")"
+      ],
+      "id": "8048841e",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "box_plot=px.box(physical_activity, x=\"sex\", y=\"sedentary_min_day\", title=\"Distribution of Sedentary time across sexes\", color=\"sex\")"
+      ],
+      "id": "c9551e84",
+      "execution_count": null,
+      "outputs": []
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "name": "python3",
+      "language": "python",
+      "display_name": "Python 3 (ipykernel)",
+      "path": "C:\\Users\\PH\\AppData\\Local\\Programs\\Python\\Python312\\share\\jupyter\\kernels\\python3"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}
